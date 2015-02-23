@@ -1,0 +1,224 @@
+﻿
+@{
+    
+    
+}
+
+<html>
+<head>
+    <title>The Mobile Servive App</title>
+    <style type="text/css">
+        table, td {
+          border:double;
+        }
+        .c1{
+            width:200px;
+        }
+        #dvappointments {
+         height:400px;
+         width:1000px;
+         overflow:visible;
+        }
+    </style>
+
+
+    <link href="~/Content/bootstrap.css" rel="stylesheet" />
+    <link href="~/Content/themes/base/all.css" rel="stylesheet" />
+    <link href="~/Content/Site.css" rel="stylesheet" />
+
+    <script src="http://ajax.aspnetcdn.com/ajax/mobileservices/MobileServices.Web-1.2.5.min.js"></script>
+
+   
+
+</head>
+<body>
+    <form class="form-horizontal" role="form">
+        <h1>The Meeting Planner</h1>
+        <div>
+            <table>
+                <tr>
+                        <td>
+                            <label for="persontomeet" class="control-label">Person To Meet</label>
+                        </td>
+                        <td>
+                            <input type="text" id="persontomeet" class="form-control c1" 
+                                    data-bind="value:PersonToMeet"/>
+                        </td>
+                </tr>
+                <tr>
+                        <td>
+                            <label for="meetinglocation" class="control-label">Meeting Location</label>
+                        </td>
+                        <td>
+                            <input type="text" id="meetinglocation" class="form-control c1"
+                                   data-bind="value:MeetingLocation" />
+                        </td>
+
+                </tr>
+                <tr>
+                        <td>
+                            <label for="meetingdate" class="control-label">Meeting Date</label>
+                        </td>
+                        <td>
+
+                            <div class="controls">
+                                <input id="meetingdate" type="text"
+                                       class="date-picker form-control c1"
+                                       data-bind="value:MeetingDate" />
+                            </div>
+
+                        </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="lstmeetststus">Meeting For</label>
+                    </td>
+                    <td>
+                        <select id="lstmeetststus" class="form-control c1"
+                                data-bind="options:MeetingType,optionsCaption:'Select Meeting Type',value:SelectedMeetingType"></select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="description">Meeting For</label>
+                    </td>
+                    <td>
+                        <textarea id="description" class="form-control c1"
+                                  data-bind="value:Description"></textarea>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <input type="button" id="btnsave" value="Save" class="btn btn-primary"
+               data-bind="click:$root.save" />
+        <div id="dvappointments">
+            <table>
+                <thead>
+                    <tr>
+                        <td>Person To Meet</td>
+                        <td>Person Location</td>
+                        <td>Meeting Date</td>
+                        <td>Purpose</td>    
+                        <td>Description</td>
+                    </tr>
+                </thead>
+                <tbody data-bind="foreach:Appointments">
+                    <tr>
+                        <td>
+                            <span data-bind="text:persontomeet"></span>
+                        </td>
+                        <td>
+                            <span data-bind="text:meetinglocation"></span>
+                        </td>
+                        <td>
+                            <span data-bind="text:meetingdate"></span>
+                        </td>
+                        <td>
+                            <span data-bind="text:meetingstatus"></span>
+                        </td>   
+                        <td>
+                            <span data-bind="text:description"></span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </form>
+     
+
+
+    <script src="~/Scripts/jquery-2.1.3.min.js"></script>
+    <script src="~/Scripts/jquery-ui-1.11.2.min.js"></script>
+    <script src="~/Scripts/bootstrap.min.js"></script>
+    <script src="~/Scripts/knockout-3.2.0.js"></script>
+
+    <script type="text/javascript">
+        //The variable used to read the current login user
+
+        var user = '@ViewBag.UserName';
+
+         $(document).ready(function () {
+             //Set the Style for data
+            $(".date-picker").datepicker({ minDate: 0, maxDate: "+1M +10D" });
+         });
+
+
+         var appointmentVM = function () {
+             //The mobile service client object
+             var client = new WindowsAzure.MobileServiceClient(
+                   "https://appointmentserv.azure-mobile.net/",
+                 "fWCuOMsPmDQIusBuABPjPZUQRwHGSA44");
+             //The Mobile Service Table object
+             var appointmentTable = client.getTable("Appointments");
+
+             //Observables for Accessing data from end-user
+             var self = this;
+             self.PersonToMeet = ko.observable("");
+             self.MeetingLocation = ko.observable("");
+             self.MeetingDate = ko.observable();
+             self.MeetingStatus = ko.observable();
+             self.Description = ko.observable("");
+
+             self.Appointments = ko.observableArray([]);
+
+             self.MeetingType = ko.observableArray(["Official", "Personal"]);
+
+             self.SelMeetingType = ko.observable();
+             self.SelectedMeetingType = ko.observable();
+
+             //Logic to Select the Meeting status
+             self.SelectedMeetingType.subscribe(function (text) {
+                 if (text !== 'undefined') {
+                     self.SelectedMeetingType(text);
+                 }
+             });
+
+             //Function to Save Appointment 
+             self.save = function () {
+                 //var appointment = {
+                 //    "persontomeet": self.PersonToMeet(),
+                 //    "meetinglocation": self.MeetingLocation(),
+                 //    "meetingdate": self.MeetingDate(),
+                 //    "meetingstatus": self.SelectedMeetingType(),
+                 //    "createdby": user,
+                 //    "description": self.Description()
+                 //};
+
+                 var appointment = {
+                    persontomeet: self.PersonToMeet(),
+                      meetinglocation: self.MeetingLocation(),
+                     meetingdate: self.MeetingDate(),
+                      meetingstatus: self.SelectedMeetingType(),
+                      createdby: user,
+                      description: self.Description()
+                 };
+                 //Insert the Appoint Information
+                 appointmentTable.insert(appointment).done(function (res) {
+                     getMeetings();
+                 }, function (err) {
+                     alert("Error " + err.request + "   " + err.request.status);
+                 });
+             };
+
+
+
+             getMeetings();
+
+             //Function to Get All Appointments for the login user
+             function getMeetings() {
+                 var query = appointmentTable.where({createdby:user});
+
+                 query.read().done(function (appointments) {
+                     self.Appointments(appointments);
+                 }, function (err) {
+                     alert("Error " + err.request + "   " + err.request.status);
+                 });
+             };
+         };
+            ko.applyBindings(new appointmentVM());
+
+    </script>
+
+
+</body>
+</html>
